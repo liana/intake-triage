@@ -5,6 +5,7 @@ import * as z from 'zod/v4';
 
 import { intakeInputSchema } from '@/lib/intake-input';
 import { createIntake, listIntakes } from '@/lib/intakes';
+import { triage, type TriageResult } from '@/lib/triage';
 
 export async function GET() {
   return Response.json(await listIntakes());
@@ -21,6 +22,16 @@ export async function POST(request: Request) {
     );
   }
 
-  const { id } = await createIntake(parsed.data);
-  return Response.json({ id }, { status: 201 });
+  // Filing the request is the job; triage is additive. A model error, a timeout,
+  // or output that fails the schema leaves the intake persisted with null AI
+  // columns and the detail page explaining itself. SPEC.md §7.
+  let result: TriageResult | null = null;
+  try {
+    result = await triage(parsed.data);
+  } catch (error) {
+    console.error('Triage failed; persisting the intake untriaged.', error);
+  }
+
+  const intake = await createIntake(parsed.data, result);
+  return Response.json(intake, { status: 201 });
 }

@@ -17,6 +17,15 @@ import { ENGAGEMENT_SHAPES, TECHNICAL_PATTERNS } from './vocabularies';
 export const TRIAGE_MODEL = 'claude-opus-5';
 export const TRIAGE_EFFORT = 'medium';
 
+/**
+ * A submitter waits on this call, so it has to be bounded. Measured at 11-17s;
+ * the SDK would otherwise default to a 10 minute timeout with two retries,
+ * which is half an hour of a spinner. One retry covers a transient 429 or 5xx
+ * without doubling the worst case the submitter can actually experience.
+ */
+const REQUEST_TIMEOUT_MS = 45_000;
+const MAX_RETRIES = 1;
+
 export type TriageInput = {
   title: string;
   description: string;
@@ -86,7 +95,7 @@ function renderIntake(input: TriageInput): string {
 </intake>`;
 }
 
-const client = new Anthropic();
+const client = new Anthropic({ timeout: REQUEST_TIMEOUT_MS, maxRetries: MAX_RETRIES });
 
 export async function triage(input: TriageInput): Promise<TriageResult> {
   const message = await client.messages.parse({

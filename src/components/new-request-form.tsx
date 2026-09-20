@@ -168,9 +168,13 @@ export function NewRequestForm() {
           disabled={isSubmitting}
           className="rounded-sm bg-accent px-4 py-2 text-body font-medium text-sheet hover:bg-accent-strong disabled:opacity-60"
         >
-          {isSubmitting ? 'Saving…' : 'Submit request'}
+          {isSubmitting ? 'Scoring…' : 'Submit request'}
         </button>
-        {isSubmitting ? <span className="text-meta text-muted">Saving your request.</span> : null}
+        {isSubmitting ? (
+          <span className="text-meta text-muted">
+            Scoring against four constraints. This usually takes about 15 seconds.
+          </span>
+        ) : null}
       </div>
     </form>
   );

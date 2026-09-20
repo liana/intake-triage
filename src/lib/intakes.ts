@@ -6,6 +6,9 @@ import * as z from 'zod/v4';
 import { prisma } from './db';
 import type { IntakeInput } from './intake-input';
 import { ACTION_TIER, type ConstraintName, type RiskLevel } from './risk';
+// Type-only: importing the module would pull the Anthropic SDK into every
+// caller of this one, including the list page.
+import type { TriageResult } from './triage';
 import { constraintAssessmentSchema, type ConstraintAssessment } from './triage-schema';
 
 const storedConstraintsSchema = z.array(constraintAssessmentSchema);
@@ -98,10 +101,26 @@ export type IntakeDetail = IntakeListItem & {
   timeline: string;
 };
 
-/** Persists a submission. AI columns stay null until triage is wired in at Gate 6. */
-export async function createIntake(input: IntakeInput): Promise<{ id: string }> {
-  const { id } = await prisma.intake.create({ data: input, select: { id: true } });
-  return { id };
+/** Columns written only when triage succeeded; null on failure is the error path. */
+function triageColumns(triage: TriageResult | null) {
+  if (!triage) return {};
+  return {
+    summary: triage.summary,
+    technicalPattern: triage.technicalPattern,
+    engagementShape: triage.engagementShape,
+    primaryConstraint: triage.primaryConstraint,
+    overallRisk: triage.overallRisk,
+    recommendedAction: triage.recommendedAction,
+    constraints: JSON.stringify(triage.constraints),
+  };
+}
+
+export async function createIntake(
+  input: IntakeInput,
+  triage: TriageResult | null
+): Promise<IntakeDetail> {
+  const row = await prisma.intake.create({ data: { ...input, ...triageColumns(triage) } });
+  return toDetail(row);
 }
 
 export async function listIntakes(): Promise<IntakeListItem[]> {
@@ -118,8 +137,10 @@ export async function listIntakes(): Promise<IntakeListItem[]> {
 
 export async function getIntake(id: string): Promise<IntakeDetail | null> {
   const row = await prisma.intake.findUnique({ where: { id } });
-  if (!row) return null;
+  return row ? toDetail(row) : null;
+}
 
+function toDetail(row: Awaited<ReturnType<typeof prisma.intake.create>>): IntakeDetail {
   return {
     id: row.id,
     title: row.title,
