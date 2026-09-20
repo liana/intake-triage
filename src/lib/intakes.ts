@@ -1,9 +1,10 @@
-// Reading intakes for the UI. Owns Prisma and the JSON boundary so components
+// Reading and writing intakes. Owns Prisma and the JSON boundary so components
 // never touch either. SQLite has no scalar lists, so `constraints` is a JSON
 // string and is parsed here with Zod rather than trusted.
 import * as z from 'zod/v4';
 
 import { prisma } from './db';
+import type { IntakeInput } from './intake-input';
 import { ACTION_TIER, type ConstraintName, type RiskLevel } from './risk';
 import { constraintAssessmentSchema, type ConstraintAssessment } from './triage-schema';
 
@@ -37,6 +38,12 @@ const RISK_LEVEL_VALUES: readonly string[] = ['Low', 'Medium', 'High'];
 
 function asRiskLevel(value: string | null): RiskLevel | null {
   return value !== null && RISK_LEVEL_VALUES.includes(value) ? (value as RiskLevel) : null;
+}
+
+/** Persists a submission. AI columns stay null until triage is wired in at Gate 6. */
+export async function createIntake(input: IntakeInput): Promise<{ id: string }> {
+  const { id } = await prisma.intake.create({ data: input, select: { id: true } });
+  return { id };
 }
 
 export async function listIntakes(): Promise<IntakeListItem[]> {
