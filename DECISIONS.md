@@ -53,6 +53,8 @@ It was cut for flow complexity. Supporting one failure mode required forking the
 
 **Triage never blocks submission.** Filing a request is the core job; triage is additive on top of it. An LLM error, a timeout, or schema-invalid output leaves the intake persisted with null AI fields and an error state on the detail page offering *Retry*. The retry lives where the missing analysis is visible rather than as a fork in the submit flow. One consequence accepted knowingly: null AI fields can't distinguish "triage failed" from "triage never ran" — a distinction only operations cares about, and what the deferred `TriageLog` would cover.
 
+**Tag filtering is post-Gate-8, not cut.** Filtering the list by the three tags is the most direct demonstration of why fixed vocabularies beat freeform, so dropping it outright would undercut the decision above. But it belongs to no build gate, and inventing one inside a 2–3 hour budget would push the required error path later. It is scheduled after Gate 8 and sits first in the §11 shed order, so if it goes, it goes explicitly. The vocabulary argument does not depend on it: consistent tags are what make the list comparable across submissions and what a routing or benchmarking layer would read, and none of that is visible in a filter control anyway.
+
 ## Tradeoffs / what we did not do
 
 Multi-agent pipeline and model tiering · OTel instrumentation · per-call triage logging · triage preview before commit · LLM-as-a-judge evals · automated tests · PII masking · auth and multi-tenancy · pagination and search · Docker · relational tag tables.

@@ -75,7 +75,7 @@ model Intake {
 }
 ```
 
-The three tag columns are the brief's three tags; all three must be filterable from the list. AI columns are null when triage failed or was skipped. `recommendedAction` holds the model's intake-specific next step only — the action tier is a function of `overallRisk` and is derived at render, so it needs no column.
+The three tag columns are the brief's three tags; all three are filterable from the list — scheduled in §11, after Gate 8. AI columns are null when triage failed or was skipped. `recommendedAction` holds the model's intake-specific next step only — the action tier is a function of `overallRisk` and is derived at render, so it needs no column.
 
 ## 6. Flow and API
 
@@ -144,9 +144,10 @@ Also verified: a description over the 5,000-character cap is rejected with a vis
 
 The exercise budgets **2–3 hours**. Going over is permitted if disclosed. If the build runs long, shed scope in this order, explicitly rather than silently:
 
-1. *Retry* on the detail page — the error state still explains itself
-2. Per-constraint mitigation text — keep constraint, risk level, and rationale
-3. Visual polish
+1. Tag filtering on the list (§5) — belongs to no gate; built only once Gate 8 is complete
+2. *Retry* on the detail page — the error state still explains itself
+3. Per-constraint mitigation text — keep constraint, risk level, and rationale
+4. Visual polish
 
 **Never cut:** the brief's required fields, the three views, the AI feature, the three UX states.
 
