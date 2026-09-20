@@ -43,11 +43,13 @@ Every intake is evaluated against four constraints — the things that limit how
 
 **Risk level anchors:** **High** — likely to block delivery or require renegotiating scope or terms before work starts. **Medium** — manageable, but needs an explicit plan and a named owner before kickoff. **Low** — handled in the normal course of work.
 
-**Overall risk:** any one High, or three or more Mediums → **High**. One or two Mediums → **Medium**. All Low → **Low**. Each level carries a recommended action.
+**Overall risk:** any one High, or three or more Mediums → **High**. One or two Mediums → **Medium**. All Low → **Low**.
+
+**Recommended action** is a hybrid. The overall risk level maps to a fixed **action tier** — High → *Escalate before quoting*; Medium → *Proceed with an explicit plan*; Low → *Proceed to scoping* — and the model writes the intake-specific next step beneath it.
 
 All four constraints always return, each with a rationale and a mitigation naming a concrete first action — "assess data quality" is a restatement, not a mitigation. Risk thresholds are unvalidated placeholders and live in a single named constants block.
 
-`overallRisk` must equal the rollup of the returned constraint risk levels.
+`overallRisk`, `primaryConstraint`, and the action tier are **derived in code** from the four returned risk levels rather than requested from the model, so the rollup holds by construction instead of by inspection.
 
 ## 5. Data model
 
@@ -73,7 +75,7 @@ model Intake {
 }
 ```
 
-The three tag columns are the brief's three tags; all three must be filterable from the list. AI columns are null when triage failed or was skipped.
+The three tag columns are the brief's three tags; all three must be filterable from the list. AI columns are null when triage failed or was skipped. `recommendedAction` holds the model's intake-specific next step only — the action tier is a function of `overallRisk` and is derived at render, so it needs no column.
 
 ## 6. Flow and API
 
@@ -90,8 +92,8 @@ Triage is synchronous: the request completes only once the model has answered or
 **One call**, not a pipeline: a single deterministic transform with every step known in advance.
 
 - **Model `claude-opus-5`, with no tools.** The risk call is the product; judgment quality matters more than cost here.
-- **Structured output:** `summary`, `technicalPattern` (enum), `engagementShape` (enum), `primaryConstraint` (enum), `constraints` (4 × `{constraint, riskLevel, rationale, mitigation}`), `overallRisk`, `recommendedAction`.
-- **Summary is 2–3 sentences**; exactly three tags; mitigations as bullets.
+- **Structured output — five fields:** `summary`, `technicalPattern` (enum), `engagementShape` (enum), `constraints` (4 × `{constraint, riskLevel, rationale, mitigation}`), `recommendedAction`. `overallRisk`, `primaryConstraint`, and the action tier are derived in code (§4) and are not part of the model's response.
+- **Summary is 2–3 sentences**; two assigned tags plus the derived third; mitigations as bullets.
 - **Submission completes fast enough that the wait feels reasonable** — triage is synchronous, so the submitter waits on it.
 - **On failure** — including output that fails schema validation — the intake still persists, with its AI fields null. Triage never blocks submission. This is the product's required error path.
 
