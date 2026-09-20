@@ -1,7 +1,6 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
+// Client Intake & Triage — data model. See SPEC.md §5.
+// SQLite has no enums and no scalar lists: vocabulary columns are String and
+// `constraints` is a JSON string parsed at the boundary with Zod.
 
 generator client {
   provider = "prisma-client-js"
@@ -14,16 +13,21 @@ datasource db {
 }
 
 model Intake {
-  id            String   @id @default(uuid())
-  title         String
-  description   String
-  budgetRange   String
-  timeline      String
-  industry      String
-  summary       String?
-  tags          String?  // Stored as JSON string
-  riskChecklist String?  // Stored as JSON string
-  triageStatus  String?  // e.g. "PENDING", "COMPLETED", "FAILED"
-  triageError   String?
-  createdAt     DateTime @default(now())
+  id                String   @id @default(cuid())
+  submitterName     String
+  contactEmail      String
+  companyName       String
+  title             String
+  description       String
+  industry          String
+  budgetRange       String
+  timeline          String
+  summary           String?
+  technicalPattern  String?
+  engagementShape   String?
+  primaryConstraint String?
+  overallRisk       String?
+  constraints       String?
+  recommendedAction String?
+  createdAt         DateTime @default(now())
 }
