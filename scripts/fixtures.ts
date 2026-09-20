@@ -7,28 +7,33 @@
 // all Low => Low. `primaryConstraint` is the highest-risk constraint, ties broken in
 // the order the constraints are listed in §4.
 
-export type Constraint = {
-  constraint: string;
-  riskLevel: 'Low' | 'Medium' | 'High';
-  rationale: string;
-  mitigation: string;
-};
+import type { ConstraintName, RiskLevel } from '@/lib/risk';
+import type { ConstraintAssessment } from '@/lib/triage-schema';
+import type {
+  BudgetRange,
+  EngagementShape,
+  Industry,
+  TechnicalPattern,
+  Timeline,
+} from '@/lib/vocabularies';
 
+// Typed against the shared vocabularies, so a mistyped tag or risk level is a
+// compile error rather than something the seed only catches at runtime.
 export type Fixture = {
   submitterName: string;
   contactEmail: string;
   companyName: string;
   title: string;
   description: string;
-  industry: string;
-  budgetRange: string;
-  timeline: string;
+  industry: Industry;
+  budgetRange: BudgetRange;
+  timeline: Timeline;
   summary: string;
-  technicalPattern: string;
-  engagementShape: string;
-  primaryConstraint: string;
-  overallRisk: string;
-  constraints: Constraint[];
+  technicalPattern: TechnicalPattern;
+  engagementShape: EngagementShape;
+  primaryConstraint: ConstraintName | 'None';
+  overallRisk: RiskLevel;
+  constraints: ConstraintAssessment[];
   recommendedAction: string;
 };
 
@@ -98,7 +103,7 @@ export const fixtures: Fixture[] = [
       },
     ],
     recommendedAction:
-      'Proceed to scoping. Staff a single senior engineer and book a kickoff — no additional review needed.',
+      'Staff a single senior engineer and book a kickoff; no additional review needed.',
   },
   {
     submitterName: 'Marcus Oyelaran',
@@ -151,7 +156,7 @@ export const fixtures: Fixture[] = [
       },
     ],
     recommendedAction:
-      'Do not quote against this scope. Escalate to a partner for a renegotiation conversation covering deployment model, autonomy level, timeline, and budget before any proposal goes out.',
+      'Escalate to a partner for a renegotiation conversation covering deployment model, autonomy level, timeline, and budget before any proposal goes out.',
   },
   {
     submitterName: 'Priya Raghunathan',
@@ -204,7 +209,7 @@ export const fixtures: Fixture[] = [
       },
     ],
     recommendedAction:
-      'Proceed with an explicit plan. Name an owner for the marketplace data profiling and put the fixed-fee roadmap figure in front of the client before kickoff.',
+      'Name an owner for the marketplace data profiling, and put the fixed-fee roadmap figure in front of the client before kickoff.',
   },
   {
     submitterName: 'Roy Castellanos',
@@ -256,7 +261,7 @@ export const fixtures: Fixture[] = [
       },
     ],
     recommendedAction:
-      'Do not quote the full build yet. Propose the phase-one data sprint as a standalone engagement and price phase two against its findings.',
+      'Propose the phase-one data sprint as a standalone engagement and price phase two against its findings.',
   },
   {
     submitterName: 'Alan Pryce',
@@ -309,6 +314,6 @@ export const fixtures: Fixture[] = [
       },
     ],
     recommendedAction:
-      'Proceed with an explicit plan. Name an owner for content accuracy sign-off and treat the injection attempt as a reminder that resident-authored input reaches the model.',
+      'Name an owner for content accuracy sign-off, and treat the injection attempt as a reminder that resident-authored input reaches the model.',
   },
 ];
