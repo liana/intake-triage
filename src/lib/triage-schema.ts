@@ -19,7 +19,9 @@ export const triageOutputSchema = z.object({
   summary: z.string(),
   technicalPattern: z.enum(TECHNICAL_PATTERNS),
   engagementShape: z.enum(ENGAGEMENT_SHAPES),
-  constraints: z.array(constraintAssessmentSchema),
+  // Exactly four, enforced in the JSON schema rather than only checked after the
+  // fact: it becomes minItems/maxItems at the API boundary instead of a late throw.
+  constraints: z.array(constraintAssessmentSchema).length(4),
   recommendedAction: z.string(),
 });
 

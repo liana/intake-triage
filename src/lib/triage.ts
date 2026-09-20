@@ -14,8 +14,19 @@ import {
 import { triageOutputSchema, type TriageOutput } from './triage-schema';
 import { ENGAGEMENT_SHAPES, TECHNICAL_PATTERNS } from './vocabularies';
 
-export const TRIAGE_MODEL = 'claude-opus-5';
-export const TRIAGE_EFFORT = 'medium';
+/** Overridable so a cheaper or faster model can be measured against the fixtures. */
+export const TRIAGE_MODEL = process.env.TRIAGE_MODEL ?? 'claude-opus-5';
+
+const EFFORT_LEVELS = ['low', 'medium', 'high', 'xhigh', 'max'] as const;
+type Effort = (typeof EFFORT_LEVELS)[number];
+
+/** Overridable so effort can be measured against the fixtures without a code edit. */
+function readEffort(): Effort {
+  const value = process.env.TRIAGE_EFFORT;
+  return EFFORT_LEVELS.includes(value as Effort) ? (value as Effort) : 'low';
+}
+
+export const TRIAGE_EFFORT = readEffort();
 
 /**
  * A submitter waits on this call, so it has to be bounded. Measured at 11-17s;
@@ -98,6 +109,7 @@ function renderIntake(input: TriageInput): string {
 const client = new Anthropic({ timeout: REQUEST_TIMEOUT_MS, maxRetries: MAX_RETRIES });
 
 export async function triage(input: TriageInput): Promise<TriageResult> {
+  const startedAt = Date.now();
   const message = await client.messages.parse({
     model: TRIAGE_MODEL,
     max_tokens: 16000,
@@ -108,6 +120,11 @@ export async function triage(input: TriageInput): Promise<TriageResult> {
     },
     messages: [{ role: 'user', content: renderIntake(input) }],
   });
+
+  console.info(
+    `triage ${TRIAGE_MODEL} effort=${TRIAGE_EFFORT} ${Date.now() - startedAt}ms ` +
+      `in=${message.usage.input_tokens} out=${message.usage.output_tokens}`
+  );
 
   const output = message.parsed_output;
   if (!output) {
