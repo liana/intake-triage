@@ -63,6 +63,8 @@ Multi-agent pipeline and model tiering · OTel instrumentation · per-call triag
 
 Add the append-only `TriageLog` described above — it serves failure diagnosis and observability in one table, and would let us track the `Other` tag rate as a vocabulary-gap signal. Build an eval set and settle one-call-versus-decomposed with measurement rather than priors. Calibrate risk thresholds against historical engagements. Reinstate PII masking and a small test suite around the parsers and rollup. Split summarization to a cheaper model if volume justifies tiering.
 
+Close the type gap at the storage boundary. Zod validates the *content* of the stored `constraints` JSON, so malformed JSON, an invalid risk level, and an unknown constraint name all degrade correctly to the "not scored" state. It does not cover the column's *type*: a BLOB where the schema says String is rejected by Prisma at the driver level, before `parseConstraints` ever runs, and the detail page returns a bare 500. Found by corrupting a row with raw SQL while verifying Gate 7. The application cannot produce it — Prisma only ever writes strings — so this is a robustness gap rather than a live bug, but "validate at the boundary" is doing less work than that phrase implies. Two fixes, both small: an `error.tsx` boundary, which the app currently has nowhere, so that any unexpected server throw renders something useful instead of a stack trace; and reading `constraints` through an explicit cast so a mistyped column degrades like every other unreadable value.
+
 ## What we learned
 
 *(fill in during the build)*

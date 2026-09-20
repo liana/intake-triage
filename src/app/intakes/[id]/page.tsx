@@ -88,14 +88,16 @@ function Analysis({ triage }: { triage: Triage }) {
   );
 }
 
-function NotTriaged() {
+function NotScored() {
   return (
     <Section>
-      <Label>Analysis</Label>
-      <p className="mt-2 max-w-prose">
-        This request has not been scored. The submission is saved and nothing has been lost —
-        only the triage is missing.
-      </p>
+      <div className="rounded-sm border border-rule bg-page/50 px-5 py-4">
+        <h2 className="font-medium">Not scored</h2>
+        <p className="mt-1 max-w-prose text-muted">
+          Scoring did not complete for this request. Everything submitted is saved below and
+          nothing has been lost.
+        </p>
+      </div>
     </Section>
   );
 }
@@ -124,7 +126,7 @@ export default async function IntakeDetailPage({ params }: PageProps<'/intakes/[
           </p>
         </header>
 
-        {intake.triage ? <Analysis triage={intake.triage} /> : <NotTriaged />}
+        {intake.triage ? <Analysis triage={intake.triage} /> : <NotScored />}
 
         <Section>
           <Label>As submitted</Label>

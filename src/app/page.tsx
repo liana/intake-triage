@@ -45,7 +45,7 @@ function Row({ intake }: { intake: IntakeListItem }) {
         </Link>
         <div className="text-meta text-muted">{intake.companyName}</div>
         <div className="mt-1 text-meta text-muted lg:hidden">
-          {triage ? `${triage.technicalPattern} / ${triage.engagementShape}` : 'Not triaged'}
+          {triage ? `${triage.technicalPattern} / ${triage.engagementShape}` : 'Not scored'}
         </div>
       </td>
       <td className="hidden py-4 pr-4 text-muted lg:table-cell">{tag(triage?.technicalPattern)}</td>
@@ -58,7 +58,7 @@ function Row({ intake }: { intake: IntakeListItem }) {
             <RiskWord level={triage.overallRisk} />
           </span>
         ) : (
-          <span className="text-meta text-muted">Not triaged</span>
+          <span className="text-meta text-muted">Not scored</span>
         )}
       </td>
       <td className="tabular py-4 pr-6 text-right text-meta whitespace-nowrap text-muted">
