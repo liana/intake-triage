@@ -75,8 +75,36 @@ Close the type gap at the storage boundary. Zod validates the *content* of the s
 
 ## What we learned
 
-*(fill in during the build)*
+**The derivation earned its keep somewhere we did not expect.** Moving `overallRisk` and `primaryConstraint` out of the model's output was argued on consistency grounds — the rollup becomes true by construction. It turned out to be a security property: the injection fixture demanded every risk be set to Low, and the model could not have complied even if it had wanted to, because those fields no longer exist in its response. It scored four Mediums and code made it High.
+
+**A constraint in the schema beats a check after the answer.** "Exactly four constraints" lived in a runtime guard that threw once the model had already responded. Moving it into the Zod schema made it `minItems`/`maxItems` inside the structured-output contract — and that, not the prompt wording, is what stopped a model returning five.
+
+**The answer key caught our errors more often than the model's.** The canned fixtures were written as a baseline to judge the model against. In practice they found a fixture with constraints in the wrong order, and on at least two risk levels the model's judgement was better calibrated than the hand-written guess it was being scored against.
+
+**Latency was a product question wearing an engineering costume.** We measured effort, a cheaper model, and streaming, and the honest answer came from none of them: the person who waits twelve seconds is not the person who reads the result. The right fix was to decide the wait did not matter, and say why.
+
+**A 10% improvement is invisible.** Dropping effort from medium to low was real, free, and measurable — and could not be felt at all in the UI. Worth taking; not worth reporting as a fix.
+
+**`npm run dev` is not a verification environment.** The static-prerender bug, and both Turbopack warnings, only exist in the build output.
 
 ## How we verified
 
-*(fill in during the build)*
+**No automated tests, by the decision above — so verification was gate-by-gate and deliberate.** Two dev scripts did the repeatable work: `npm run seed` loads five fixtures with canned triage, and `npm run triage -- <n>` runs any fixture through the real call and diffs the categorical fields against that canned answer key. Everything else was a one-shot check, run rather than described.
+
+**Gate 1.** Reset the database to zero, re-applied the migration, re-seeded, then read the rows back out with `sqlite3` — deliberately not through Prisma, so the check did not share a code path with the writer — and validated every canned payload against the §3 vocabularies and the §4 rollup.
+
+**Gate 2.** Four fixtures through the live API. Confirmed the model discriminates: the clean fixture scored all Low, the healthcare pile-up all High-and-Medium.
+
+**Gate 3.** Asserted the rendered HTML, cleared the table to see the empty state, and confirmed every custom Tailwind utility and the Archivo `@font-face` blocks were actually in the generated stylesheet rather than assuming the theme compiled.
+
+**Gate 4.** Proved every rejection with `curl` before the form existed: 201 and the row persisted; 400 with "Keep the description under 5,000 characters"; 400 with per-field messages for a bad email, a blank title and an invalid enum; 400 rather than a crash on a malformed body. The client and server share one Zod schema, so testing through the form would have proved only that the client works.
+
+**Gate 5.** Asserted the detail page against values read out of the database rather than hardcoded expectations — the first version of that check failed on a string typed from memory, not on a defect.
+
+**Gate 6.** A real submission end to end: 201 in 16s, AI columns present in SQLite, the analysis on the page, the row in the list.
+
+**Gate 7.** Ran the app with a deliberately invalid API key and submitted: 401 caught, 201 returned, intake persisted untriaged. Corrupted stored output three ways — malformed JSON, an out-of-vocabulary risk level, an unknown constraint name — and confirmed each degrades to the error state instead of rendering. Sent the injection fixture through the real `POST`. Made the database read-only to prove a failed *write* is distinguishable from a failed *triage*.
+
+**What the checks caught that reading the code would not.** A list page silently prerendered as static, which would have frozen it at build time and which `npm run dev` never reveals. A seed fixture with its constraints out of precedence order. A type-level gap where a BLOB in a TEXT column bypasses the Zod boundary entirely. And Sonnet 5 returning five constraints where the rubric defines four.
+
+**What is not covered.** Nothing is protected against regression: the no-tools invariant, the risk rollup and the parsers would all break silently under future change. Prose quality — whether a mitigation is a real first action — was judged by reading it. Latency figures are single samples, so the per-fixture deltas sit near run-to-run variance.
