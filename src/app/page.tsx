@@ -34,7 +34,8 @@ function Empty() {
 }
 
 function Row({ intake }: { intake: IntakeListItem }) {
-  const tag = (value: string | null) => value ?? <span className="text-rule">—</span>;
+  const { triage } = intake;
+  const tag = (value: string | undefined) => value ?? <span className="text-rule">—</span>;
 
   return (
     <tr className="border-t border-rule align-top hover:bg-page/60">
@@ -44,18 +45,17 @@ function Row({ intake }: { intake: IntakeListItem }) {
         </Link>
         <div className="text-meta text-muted">{intake.companyName}</div>
         <div className="mt-1 text-meta text-muted lg:hidden">
-          {[intake.technicalPattern, intake.engagementShape].filter(Boolean).join(' / ') ||
-            'Not triaged'}
+          {triage ? `${triage.technicalPattern} / ${triage.engagementShape}` : 'Not triaged'}
         </div>
       </td>
-      <td className="hidden py-4 pr-4 text-muted lg:table-cell">{tag(intake.technicalPattern)}</td>
-      <td className="hidden py-4 pr-4 text-muted lg:table-cell">{tag(intake.engagementShape)}</td>
-      <td className="hidden py-4 pr-4 text-muted lg:table-cell">{tag(intake.primaryConstraint)}</td>
+      <td className="hidden py-4 pr-4 text-muted lg:table-cell">{tag(triage?.technicalPattern)}</td>
+      <td className="hidden py-4 pr-4 text-muted lg:table-cell">{tag(triage?.engagementShape)}</td>
+      <td className="hidden py-4 pr-4 text-muted lg:table-cell">{tag(triage?.primaryConstraint)}</td>
       <td className="py-4 pr-4 whitespace-nowrap">
-        {intake.constraints ? (
+        {triage ? (
           <span className="flex items-center gap-3">
-            <AssayMark constraints={intake.constraints} />
-            {intake.overallRisk ? <RiskWord level={intake.overallRisk} /> : null}
+            <AssayMark constraints={triage.constraints} />
+            <RiskWord level={triage.overallRisk} />
           </span>
         ) : (
           <span className="text-meta text-muted">Not triaged</span>

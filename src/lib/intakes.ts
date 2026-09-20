@@ -21,24 +21,82 @@ function parseConstraints(json: string | null): ConstraintAssessment[] | null {
   }
 }
 
-export type IntakeListItem = {
-  id: string;
-  title: string;
-  companyName: string;
-  createdAt: Date;
-  technicalPattern: string | null;
-  engagementShape: string | null;
-  primaryConstraint: string | null;
-  overallRisk: RiskLevel | null;
-  actionTier: string | null;
-  constraints: ConstraintAssessment[] | null;
-};
-
 const RISK_LEVEL_VALUES: readonly string[] = ['Low', 'Medium', 'High'];
 
 function asRiskLevel(value: string | null): RiskLevel | null {
   return value !== null && RISK_LEVEL_VALUES.includes(value) ? (value as RiskLevel) : null;
 }
+
+/** The triage half of an intake, present only when all of it survived. */
+export type Triage = {
+  summary: string;
+  technicalPattern: string;
+  engagementShape: string;
+  primaryConstraint: string;
+  overallRisk: RiskLevel;
+  actionTier: string;
+  recommendedAction: string;
+  constraints: ConstraintAssessment[];
+};
+
+type IntakeRow = {
+  summary: string | null;
+  technicalPattern: string | null;
+  engagementShape: string | null;
+  primaryConstraint: string | null;
+  overallRisk: string | null;
+  recommendedAction: string | null;
+  constraints: string | null;
+};
+
+/**
+ * All of it or none of it. A row half-written by a failed triage reads as
+ * untriaged rather than rendering a summary with no risk against it.
+ */
+function toTriage(row: IntakeRow): Triage | null {
+  const constraints = parseConstraints(row.constraints);
+  const overallRisk = asRiskLevel(row.overallRisk);
+
+  if (
+    !constraints ||
+    !overallRisk ||
+    !row.summary ||
+    !row.technicalPattern ||
+    !row.engagementShape ||
+    !row.primaryConstraint ||
+    !row.recommendedAction
+  ) {
+    return null;
+  }
+
+  return {
+    summary: row.summary,
+    technicalPattern: row.technicalPattern,
+    engagementShape: row.engagementShape,
+    primaryConstraint: row.primaryConstraint,
+    overallRisk,
+    actionTier: ACTION_TIER[overallRisk],
+    recommendedAction: row.recommendedAction,
+    constraints,
+  };
+}
+
+export type IntakeListItem = {
+  id: string;
+  title: string;
+  companyName: string;
+  createdAt: Date;
+  triage: Triage | null;
+};
+
+export type IntakeDetail = IntakeListItem & {
+  submitterName: string;
+  contactEmail: string;
+  description: string;
+  industry: string;
+  budgetRange: string;
+  timeline: string;
+};
 
 /** Persists a submission. AI columns stay null until triage is wired in at Gate 6. */
 export async function createIntake(input: IntakeInput): Promise<{ id: string }> {
@@ -49,21 +107,32 @@ export async function createIntake(input: IntakeInput): Promise<{ id: string }> 
 export async function listIntakes(): Promise<IntakeListItem[]> {
   const rows = await prisma.intake.findMany({ orderBy: { createdAt: 'desc' } });
 
-  return rows.map((row) => {
-    const overallRisk = asRiskLevel(row.overallRisk);
-    return {
-      id: row.id,
-      title: row.title,
-      companyName: row.companyName,
-      createdAt: row.createdAt,
-      technicalPattern: row.technicalPattern,
-      engagementShape: row.engagementShape,
-      primaryConstraint: row.primaryConstraint,
-      overallRisk,
-      actionTier: overallRisk ? ACTION_TIER[overallRisk] : null,
-      constraints: parseConstraints(row.constraints),
-    };
-  });
+  return rows.map((row) => ({
+    id: row.id,
+    title: row.title,
+    companyName: row.companyName,
+    createdAt: row.createdAt,
+    triage: toTriage(row),
+  }));
+}
+
+export async function getIntake(id: string): Promise<IntakeDetail | null> {
+  const row = await prisma.intake.findUnique({ where: { id } });
+  if (!row) return null;
+
+  return {
+    id: row.id,
+    title: row.title,
+    companyName: row.companyName,
+    createdAt: row.createdAt,
+    submitterName: row.submitterName,
+    contactEmail: row.contactEmail,
+    description: row.description,
+    industry: row.industry,
+    budgetRange: row.budgetRange,
+    timeline: row.timeline,
+    triage: toTriage(row),
+  };
 }
 
 export type { ConstraintAssessment, ConstraintName, RiskLevel };
